@@ -71,6 +71,12 @@ export default function Home() {
   const [isMissionsCollapsed, setIsMissionsCollapsed] = useState(true);
   const [hasOpenedMissions, setHasOpenedMissions] = useState(false);
 
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      window.dispatchEvent(new CustomEvent('navigationStateChange', { detail: { isActive: isMapRouting } }));
+    }
+  }, [isMapRouting]);
+
   const checkBounds = (lat: number, lng: number) => {
     // strict allowedBounds: [12.865, 77.550] to [12.945, 77.625]
     if (lat < 12.865 || lat > 12.945 || lng < 77.550 || lng > 77.625) {
@@ -243,14 +249,23 @@ export default function Home() {
   return (
     <>
       <div className="fixed inset-0 overflow-hidden w-full flex flex-col px-4 pt-safe-header pb-[calc(env(safe-area-inset-bottom)+6rem)] space-y-3">
-        <div className="flex justify-between items-start z-10 shrink-0">
-          <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="max-w-[calc(100%-150px)]">
+        <motion.div 
+          initial={false}
+          animate={{ 
+            opacity: isMapRouting ? 0 : 1, 
+            y: isMapRouting ? -20 : 0, 
+            pointerEvents: isMapRouting ? 'none' : 'auto' 
+          }}
+          transition={{ duration: 0.3 }}
+          className="flex justify-between items-start z-10 shrink-0"
+        >
+          <div className="max-w-[calc(100%-150px)] pb-1">
             <div className="mb-1">
               <h1 className="text-3xl font-bold text-white tracking-tight leading-tight">Namma<br />Hood</h1>
             </div>
             <p className="text-zinc-400 text-xs font-semibold mt-1">Together, we’re making Bangalore the garden city again.</p>
-          </motion.div>
-        </div>
+          </div>
+        </motion.div>
 
         {/* Main Content Area - Fixed Bounds */}
         <div className="w-full flex-1 relative mt-2">
@@ -272,6 +287,7 @@ export default function Home() {
                 xpEvent={xpEvent}
                 onNavInstructionChange={setNavInstruction}
                 onNavDistanceChange={setNavDistance}
+                onClearRoute={() => setMissionRouteDest(null)}
               />
 
               {/* Combined Missions & Nearest Cleanup Overlay */}

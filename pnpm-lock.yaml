@@ -11,6 +11,9 @@ importers:
       '@capacitor/android':
         specifier: ^8.4.1
         version: 8.4.2(@capacitor/core@8.4.2)
+      '@capacitor/app':
+        specifier: ^8.1.1
+        version: 8.1.1(@capacitor/core@8.4.2)
       '@capacitor/camera':
         specifier: ^8.2.1
         version: 8.2.1(@capacitor/core@8.4.2)
@@ -35,6 +38,9 @@ importers:
       '@capacitor/share':
         specifier: ^8.0.1
         version: 8.0.1(@capacitor/core@8.4.2)
+      '@capgo/capacitor-live-activities':
+        specifier: ^1.1.4
+        version: 1.1.4(@capacitor/core@8.4.2)
       '@ionic/pwa-elements':
         specifier: ^3.4.0
         version: 3.4.0
@@ -224,6 +230,11 @@ packages:
     peerDependencies:
       '@capacitor/core': ^8.4.0
 
+  '@capacitor/app@8.1.1':
+    resolution: {integrity: sha512-xM2ZTX5jK60tFtmjsmJv+Cdj1Qsb6NcavkqmdEnCPQBeya9oKhamZJxYOnQNj1ZvcJM7sWfG6BEtSLx42pisbA==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
+
   '@capacitor/assets@3.0.5':
     resolution: {integrity: sha512-ohz/OUq61Y1Fc6aVSt0uDrUdeOA7oTH4pkWDbv/8I3UrPjH7oPkzYhShuDRUjekNp9RBi198VSFdt0CetpEOzw==}
     engines: {node: '>=10.3.0'}
@@ -279,6 +290,11 @@ packages:
 
   '@capacitor/synapse@1.0.4':
     resolution: {integrity: sha512-/C1FUo8/OkKuAT4nCIu/34ny9siNHr9qtFezu4kxm6GY1wNFxrCFWjfYx5C1tUhVGz3fxBABegupkpjXvjCHrw==}
+
+  '@capgo/capacitor-live-activities@1.1.4':
+    resolution: {integrity: sha512-oWClSbVtFDDbeOd4q1gqcJW+zv3AnP09T48qFUKn796oNfxStOuR9/Oz1l+RC7wwVnFY5bCfb/iixCs16/l8Sw==}
+    peerDependencies:
+      '@capacitor/core': '>=8.0.0'
 
   '@cspotcode/source-map-support@0.8.1':
     resolution: {integrity: sha512-IchNf6dN4tHoMFIn/7OE8LWZ19Y6q/67Bmf6vnGREv8RSbBVb9LPJxEcnwrcwX6ixSvaiGoomAUvu4YSxXrVgw==}
@@ -4105,6 +4121,10 @@ snapshots:
     dependencies:
       '@capacitor/core': 8.4.2
 
+  '@capacitor/app@8.1.1(@capacitor/core@8.4.2)':
+    dependencies:
+      '@capacitor/core': 8.4.2
+
   '@capacitor/assets@3.0.5(@types/node@20.19.43)(typescript@5.9.3)':
     dependencies:
       '@capacitor/cli': 5.7.8
@@ -4209,6 +4229,10 @@ snapshots:
       '@capacitor/core': 8.4.2
 
   '@capacitor/synapse@1.0.4': {}
+
+  '@capgo/capacitor-live-activities@1.1.4(@capacitor/core@8.4.2)':
+    dependencies:
+      '@capacitor/core': 8.4.2
 
   '@cspotcode/source-map-support@0.8.1':
     dependencies:

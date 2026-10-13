@@ -15,11 +15,19 @@ export default function NotificationInbox() {
   const [hasPermission, setHasPermission] = useState(false);
   const [streak, setStreak] = useState(0);
   const [isHidden, setIsHidden] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(false);
 
   useEffect(() => {
     const handleScroll = (e: any) => setIsHidden(e.detail.isScrolled);
+    const handleNavState = (e: any) => setIsNavigating(e.detail.isActive);
+    
     window.addEventListener('scrollStateChange', handleScroll);
-    return () => window.removeEventListener('scrollStateChange', handleScroll);
+    window.addEventListener('navigationStateChange', handleNavState);
+    
+    return () => {
+      window.removeEventListener('scrollStateChange', handleScroll);
+      window.removeEventListener('navigationStateChange', handleNavState);
+    };
   }, []);
 
   useEffect(() => {
@@ -97,10 +105,12 @@ export default function NotificationInbox() {
     }
   };
 
+  const shouldHide = isHidden || isNavigating;
+
   return (
     <motion.div 
       initial={false}
-      animate={{ opacity: isHidden ? 0 : 1, y: isHidden ? -20 : 0, pointerEvents: isHidden ? 'none' : 'auto' }}
+      animate={{ opacity: shouldHide ? 0 : 1, y: shouldHide ? -20 : 0, pointerEvents: shouldHide ? 'none' : 'auto' }}
       transition={{ duration: 0.2 }}
       className="absolute right-4 z-[900] flex items-center space-x-3"
       style={{ top: 'var(--header-top)' }}

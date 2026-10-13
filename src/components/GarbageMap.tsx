@@ -22,7 +22,7 @@ import { calculateTerritoryLeaderboard, AreaStats } from '@/lib/territories';
 import GarbageCard from '@/components/GarbageCard';
 import { usePostActions } from '@/hooks/usePostActions';
 import territoriesData from '@/data/territories.json';
-import DynamicIsland from '@/components/DynamicIsland';
+import DynamicIslandUi from './DynamicIsland';
 import { cn } from '@/lib/utils';
 
 // Initial center
@@ -41,9 +41,7 @@ const rasterMapStyle = {
     'carto-dark': {
       type: 'raster',
       tiles: [
-        'https://a.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-        'https://b.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png',
-        'https://c.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}.png'
+        'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}'
       ],
       tileSize: 256
     }
@@ -80,6 +78,18 @@ function getDistanceInMeters(lat1: number, lon1: number, lat2: number, lon2: num
   const dl = (lon2-lon1) * Math.PI/180;
   const a = Math.sin(dp/2) * Math.sin(dp/2) + Math.cos(p1) * Math.cos(p2) * Math.sin(dl/2) * Math.sin(dl/2);
   return 2 * R * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
+
+function getBearing(startLat: number, startLng: number, destLat: number, destLng: number) {
+  const toRad = (deg: number) => deg * Math.PI / 180;
+  const toDeg = (rad: number) => rad * 180 / Math.PI;
+  const dLng = toRad(destLng - startLng);
+  const lat1 = toRad(startLat);
+  const lat2 = toRad(destLat);
+  const y = Math.sin(dLng) * Math.cos(lat2);
+  const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+  const brng = toDeg(Math.atan2(y, x));
+  return Math.round((brng + 360) % 360);
 }
 
 function getClosestSegmentInfo(point: [number, number], route: [number, number][]) {
@@ -163,9 +173,10 @@ interface GarbageMapProps {
   xpEvent?: { amount: number; id: string } | null;
   onNavInstructionChange?: (instruction: string | undefined) => void;
   onNavDistanceChange?: (distance: number | undefined) => void;
+  onClearRoute?: () => void;
 }
 
-export default function GarbageMap({ userLoc, externalRouteDest, onActiveRouteChange, xpEvent, onNavInstructionChange, onNavDistanceChange }: GarbageMapProps) {
+export default function GarbageMap({ userLoc, externalRouteDest, onActiveRouteChange, xpEvent, onNavInstructionChange, onNavDistanceChange, onClearRoute }: GarbageMapProps) {
   const mapRef = useRef<MapRef>(null);
   
   const [zoom, setZoom] = useState(13.5);
@@ -192,12 +203,18 @@ export default function GarbageMap({ userLoc, externalRouteDest, onActiveRouteCh
     onSuccess: (title, message) => alert(`${title}\n${message}`),
   });
   const [currentDestination, setCurrentDestination] = useState<{lat: number, lng: number} | null>(null);
-  const [routingProfile, setRoutingProfile] = useState<'foot' | 'driving'>('foot');
+  const [routingProfile, setRoutingProfile] = useState<'foot' | 'driving'>('driving');
   const [isRouting, setIsRouting] = useState(false);
   const [isLiveNavigation, setIsLiveNavigation] = useState(false);
   const [isCameraLocked, setIsCameraLocked] = useState(true);
   const [navInstruction, setNavInstruction] = useState<string | undefined>(undefined);
   const [navDistance, setNavDistance] = useState<number | undefined>(undefined);
+  const [navDuration, setNavDuration] = useState<number | undefined>(undefined);
+  const [navProgress, setNavProgress] = useState<number | undefined>(undefined);
+  const [totalRouteDistance, setTotalRouteDistance] = useState<number | undefined>(undefined);
+  const [totalRemainingDist, setTotalRemainingDist] = useState<number | undefined>(undefined);
+  const [alternativeRoutes, setAlternativeRoutes] = useState<any[] | null>(null);
+  const [selectedRouteIndex, setSelectedRouteIndex] = useState(0);
   const [showUserPopup, setShowUserPopup] = useState(false);
   const [routeSteps, setRouteSteps] = useState<any[] | null>(null);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
@@ -238,8 +255,7 @@ export default function GarbageMap({ userLoc, externalRouteDest, onActiveRouteCh
     if (currentStepIndex !== null && routeSteps && routeSteps[currentStepIndex]) {
       const currentStep = routeSteps[currentStepIndex];
       const isArrive = currentStep.maneuver.type === 'arrive';
-      // getDistanceInMeters must be available here. It is defined later in the file.
-      // Wait, is getDistanceInMeters in scope here?
+      
       const getDistanceInMetersLocal = (lat1: number, lon1: number, lat2: number, lon2: number) => {
         const R = 6371e3;
         const φ1 = lat1 * Math.PI / 180;
@@ -257,10 +273,19 @@ export default function GarbageMap({ userLoc, externalRouteDest, onActiveRouteCh
       const hasArrived = isArrive && distToManeuver <= 25;
       
       let inst = "";
-      if (hasArrived) inst = "Arrived at location";
-      else if (currentStep.maneuver.modifier) inst = `Turn ${currentStep.maneuver.modifier.replace(/-/g, ' ')}`;
-      else if (isArrive) inst = "Arrive at destination";
-      else inst = "Continue straight";
+      if (hasArrived) {
+        inst = "Arrived at location";
+      } else if (currentStep.maneuver.type === 'arrive') {
+        inst = "Arrive at destination";
+      } else if (currentStep.maneuver.modifier === 'uturn') {
+        inst = "Make a U-turn";
+      } else if (currentStep.maneuver.modifier === 'straight') {
+        inst = "Continue straight";
+      } else if (currentStep.maneuver.modifier) {
+        inst = `Turn ${currentStep.maneuver.modifier.replace(/-/g, ' ')}`;
+      } else {
+        inst = "Continue straight";
+      }
 
       if (!hasArrived && !isArrive && currentStep.name) {
         inst += ` on ${currentStep.name}`;
@@ -268,10 +293,11 @@ export default function GarbageMap({ userLoc, externalRouteDest, onActiveRouteCh
 
       setNavInstruction(inst);
       setNavDistance(distToManeuver);
+      
       onNavInstructionChange?.(inst);
       onNavDistanceChange?.(distToManeuver);
     }
-  }, [currentStepIndex, routeSteps, userLoc, onNavInstructionChange, onNavDistanceChange]);
+  }, [currentStepIndex, routeSteps, userLoc, onNavInstructionChange, onNavDistanceChange, totalRouteDistance]);
 
   // Sync externalRouteDest to currentDestination
   useEffect(() => {
@@ -279,6 +305,7 @@ export default function GarbageMap({ userLoc, externalRouteDest, onActiveRouteCh
     if (!externalRouteDest) {
       setFullRoute(null);
       setActiveRoute(null);
+      setAlternativeRoutes(null);
     }
   }, [externalRouteDest]);
 
@@ -295,14 +322,22 @@ export default function GarbageMap({ userLoc, externalRouteDest, onActiveRouteCh
         try {
           const start = { lng: userLoc.lng, lat: userLoc.lat };
           const end = { lng: currentDestination.lng, lat: currentDestination.lat };
-          const response = await fetch(
-            `https://router.project-osrm.org/route/v1/${routingProfile}/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&geometries=geojson&steps=true`
-          );
+          let url = `https://router.project-osrm.org/route/v1/${routingProfile}/${start.lng},${start.lat};${end.lng},${end.lat}?overview=full&geometries=geojson&steps=true&alternatives=true`;
+          
+          if (typeof userLoc.heading === 'number') {
+            url += `&bearings=${Math.round(userLoc.heading)},90;`;
+          }
+          
+          const response = await fetch(url);
           const data = await response.json();
           if (data.routes?.length > 0) {
+            setAlternativeRoutes(data.routes);
+            setSelectedRouteIndex(0);
+            
             const coords = data.routes[0].geometry.coordinates;
             const steps = data.routes[0].legs[0]?.steps || [];
             
+            setTotalRouteDistance(data.routes[0].distance);
             setFullRoute(coords);
             setActiveRoute(coords);
             setRouteSteps(steps);
@@ -358,6 +393,19 @@ export default function GarbageMap({ userLoc, externalRouteDest, onActiveRouteCh
          prunedRoute = [snappedPoint, fullRoute[fullRoute.length - 1]];
        }
        setActiveRoute(prunedRoute);
+       
+       let routeDist = 0;
+       for (let i = 0; i < prunedRoute.length - 1; i++) {
+         routeDist += getDistanceInMeters(prunedRoute[i][1], prunedRoute[i][0], prunedRoute[i+1][1], prunedRoute[i+1][0]);
+       }
+       setTotalRemainingDist(Math.round(routeDist));
+       
+       setTotalRouteDistance(prev => {
+         if (prev) {
+            setNavProgress(Math.min(100, Math.max(0, ((prev - routeDist) / prev) * 100)));
+         }
+         return prev;
+       });
        
        // Step progression
        setRouteSteps(steps => {
@@ -488,9 +536,9 @@ export default function GarbageMap({ userLoc, externalRouteDest, onActiveRouteCh
 
   useEffect(() => {
     if (onActiveRouteChange) {
-      onActiveRouteChange(!!activeRoute);
+      onActiveRouteChange(isLiveNavigation);
     }
-  }, [activeRoute, onActiveRouteChange]);
+  }, [isLiveNavigation, onActiveRouteChange]);
 
   // Clustering logic
   const points = useMemo(() => {
@@ -548,12 +596,15 @@ export default function GarbageMap({ userLoc, externalRouteDest, onActiveRouteCh
           setBounds(evt.target.getBounds().toArray().flat() as [number, number, number, number]);
         }}
         ref={mapRef}
-        mapStyle={rasterMapStyle as any}
+        mapStyle="https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.json"
         maxBounds={allowedBounds}
         maxZoom={22}
         minZoom={13}
         attributionControl={false}
-        interactiveLayerIds={['territory-fill']}
+        interactiveLayerIds={[
+          ...(territories ? ['territory-fill'] : []),
+          ...(alternativeRoutes && !isLiveNavigation ? alternativeRoutes.map((_, i) => `route-hitbox-${i}`) : [])
+        ]}
         dragPan={!selectedSpot}
         scrollZoom={!selectedSpot}
         doubleClickZoom={!selectedSpot}
@@ -627,6 +678,32 @@ export default function GarbageMap({ userLoc, externalRouteDest, onActiveRouteCh
           }
         }}
         onClick={e => {
+          if (e.features && e.features.length > 0) {
+            const feature = e.features[0];
+            
+            if (feature.layer.id.startsWith('route-hitbox-')) {
+              const clickedIndex = feature.properties?.routeIndex;
+              if (clickedIndex !== undefined && alternativeRoutes) {
+                const route = alternativeRoutes[clickedIndex];
+                setSelectedRouteIndex(clickedIndex);
+                
+                const coords = route.geometry.coordinates;
+                const steps = route.legs[0]?.steps || [];
+                setTotalRouteDistance(route.distance);
+                setFullRoute(coords);
+                setActiveRoute(coords);
+                setRouteSteps(steps);
+                setCurrentStepIndex(0);
+                offRouteCounter.current = 0;
+                return;
+              }
+            }
+
+            if (feature.layer.id === 'territory-fill') {
+              const areaName = feature.properties?.name;
+            }
+          }
+
           if (activeRoute || isLiveNavigation || selectedSpot) return;
           
           let clientX, clientY;
@@ -725,30 +802,48 @@ export default function GarbageMap({ userLoc, externalRouteDest, onActiveRouteCh
           }
         }}
       >
-        {activeRoute && activeRoute.length > 0 && (
-          <Source 
-            id="route" 
-            type="geojson" 
-            data={{
-              type: "FeatureCollection",
-              features: [{
+        {/* Route Lines */}
+        {alternativeRoutes && alternativeRoutes.length > 0 && !isLiveNavigation ? (
+          alternativeRoutes.map((routeData, index) => {
+            const isSelected = index === selectedRouteIndex;
+            return (
+              <Source key={`route-source-${index}`} id={`route-source-${index}`} type="geojson" data={{
                 type: "Feature",
-                properties: {},
-                geometry: {
-                  type: "LineString",
-                  coordinates: activeRoute
-                }
-              }]
-            }}
-          >
-            <Layer
-              id="route-layer"
-              type="line"
-              source="route"
-              layout={{
-                "line-join": "round",
-                "line-cap": "round"
-              }}
+                properties: { routeIndex: index },
+                geometry: { type: "LineString", coordinates: routeData.geometry.coordinates }
+              }}>
+                <Layer 
+                  id={`route-layer-${index}`} 
+                  type="line" 
+                  layout={{ 'line-join': 'round', 'line-cap': 'round' }}
+                  paint={{
+                    'line-color': '#f14f4f',
+                    'line-width': isSelected ? 6 : 4,
+                    'line-opacity': isSelected ? 1 : 0.3
+                  }}
+                />
+                <Layer 
+                  id={`route-hitbox-${index}`} 
+                  type="line" 
+                  layout={{ 'line-join': 'round', 'line-cap': 'round' }}
+                  paint={{
+                    'line-color': 'transparent',
+                    'line-width': 30
+                  }}
+                />
+              </Source>
+            );
+          })
+        ) : activeRoute && (
+          <Source id="route-source" type="geojson" data={{
+            type: "Feature",
+            properties: {},
+            geometry: { type: "LineString", coordinates: activeRoute }
+          }}>
+            <Layer 
+              id="route-layer" 
+              type="line" 
+              layout={{ "line-join": "round", "line-cap": "round" }}
               paint={{
                 "line-color": (!fullRoute && isRouting) ? "#888888" : "#f14f4f",
                 "line-width": 6,
@@ -784,10 +879,10 @@ export default function GarbageMap({ userLoc, externalRouteDest, onActiveRouteCh
                 'line-width': [
                   'case',
                   ['boolean', ['feature-state', 'hover'], false],
-                  2,
+                  3,
                   ['boolean', ['feature-state', 'active'], false],
-                  2,
-                  1
+                  3,
+                  1.5
                 ],
                 'line-dasharray': [3, 4],
                 'line-opacity': [
@@ -796,7 +891,7 @@ export default function GarbageMap({ userLoc, externalRouteDest, onActiveRouteCh
                   1.0,
                   ['boolean', ['feature-state', 'active'], false],
                   1.0,
-                  0.3
+                  0.7
                 ]
               }}
             />
@@ -998,6 +1093,7 @@ export default function GarbageMap({ userLoc, externalRouteDest, onActiveRouteCh
           );
         })}
 
+
         {selectedSpot && !currentDestination && (
           <Popup
             longitude={selectedSpot.pos[1]}
@@ -1088,12 +1184,16 @@ export default function GarbageMap({ userLoc, externalRouteDest, onActiveRouteCh
       </Map>
 
       {/* Dynamic Island Component */}
-      <DynamicIsland
+      <DynamicIslandUi
         userLoc={userLoc || null}
         hotspots={hotspots}
         isLiveNavigation={isLiveNavigation}
         navDistance={navDistance}
         navInstruction={navInstruction}
+        navDuration={navDuration}
+        navProgress={navProgress}
+        totalRemainingDist={totalRemainingDist}
+        totalRouteDistance={totalRouteDistance}
         xpEvent={xpEvent || null}
       />
 
@@ -1140,31 +1240,6 @@ export default function GarbageMap({ userLoc, externalRouteDest, onActiveRouteCh
         )}
       </AnimatePresence>
 
-      {/* Turn-by-Turn Instruction Overlay */}
-      <AnimatePresence>
-        {isLiveNavigation && routeSteps && currentStepIndex !== null && currentStepIndex < routeSteps.length && (
-          <motion.div 
-            initial={{ opacity: 0, y: -20 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -20 }}
-            className="absolute top-6 left-1/2 -translate-x-1/2 z-[999] pointer-events-auto w-[90%] max-w-sm"
-          >
-            <div className="glass-panel p-4 rounded-3xl border border-[#10b981]/20 shadow-[0_15px_40px_rgba(0,0,0,0.6)] flex items-center space-x-4 bg-black/80 backdrop-blur-md">
-              <div className="w-12 h-12 rounded-full bg-[#10b981]/20 flex items-center justify-center border border-[#10b981]/30 text-[#10b981]">
-                <Navigation className="w-6 h-6" />
-              </div>
-              <div className="flex-1">
-                <p className="text-white font-black text-lg leading-tight drop-shadow-md">
-                  {navInstruction?.split(' on ')[0] || "Proceed to route"}
-                </p>
-                <p className="text-[#10b981] font-bold text-sm">
-                  {navInstruction?.includes(' on ') ? `${navInstruction.split(' on ')[1]} • ${navDistance}m` : `${navDistance}m`}
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
       {/* Rerouting Overlay */}
       <AnimatePresence>
@@ -1277,8 +1352,10 @@ export default function GarbageMap({ userLoc, externalRouteDest, onActiveRouteCh
                   setActiveRoute(null);
                   setFullRoute(null);
                   setCurrentDestination(null);
+                  setAlternativeRoutes(null);
                   onNavInstructionChange?.(undefined);
                   onNavDistanceChange?.(undefined);
+                  onClearRoute?.();
                   if (mapRef.current) {
                     if (selectedSpot) {
                       mapRef.current.flyTo({ center: [selectedSpot.pos[1], selectedSpot.pos[0]], zoom: 17, pitch: 0, bearing: 0, duration: 1500 });

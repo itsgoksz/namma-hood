@@ -2,7 +2,7 @@
 
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { Navigation, Target, Leaf, ShieldAlert } from "lucide-react";
+import { Navigation, Target, Leaf, ShieldAlert, ArrowUp, ArrowUpLeft, ArrowUpRight, CornerUpLeft, CornerUpRight, Undo2, MapPin } from "lucide-react";
 
 interface Hotspot {
   pos: [number, number];
@@ -15,6 +15,10 @@ interface DynamicIslandProps {
   isLiveNavigation: boolean;
   navDistance?: number;
   navInstruction?: string;
+  navDuration?: number;
+  navProgress?: number;
+  totalRemainingDist?: number;
+  totalRouteDistance?: number;
   xpEvent?: { amount: number; id: string } | null;
 }
 
@@ -36,8 +40,40 @@ export default function DynamicIsland({
   isLiveNavigation,
   navDistance,
   navInstruction,
+  navDuration,
+  navProgress,
+  totalRemainingDist,
+  totalRouteDistance,
   xpEvent,
 }: DynamicIslandProps) {
+  let primaryAction = "Proceed";
+  let destinationStr = "";
+  
+  if (navInstruction) {
+    if (navInstruction.includes(" on ")) {
+      const parts = navInstruction.split(" on ");
+      primaryAction = parts[0];
+      destinationStr = parts[1];
+    } else {
+      primaryAction = navInstruction;
+    }
+  }
+
+  let formattedPrimary = primaryAction;
+  if (navDistance !== undefined && navDistance > 10 && !primaryAction.toLowerCase().includes("arrived")) {
+    const distStr = navDistance > 1000 ? `${(navDistance / 1000).toFixed(1)} km` : `${navDistance} meters`;
+    
+    if (primaryAction.toLowerCase().includes("continue straight")) {
+      formattedPrimary = `${primaryAction} for ${distStr}`;
+    } else if (primaryAction.toLowerCase().includes("arrive")) {
+      formattedPrimary = `Arriving in ${distStr}`;
+    } else {
+      formattedPrimary = `${primaryAction} in ${distStr}`;
+    }
+  }
+  
+  const formattedDestination = destinationStr ? `towards ${destinationStr}` : "";
+
   const [islandState, setIslandState] = useState<
     "hidden" | "idle" | "radar-far" | "radar-near" | "radar-here" | "navigation" | "xp-drop"
   >("hidden");
@@ -46,6 +82,19 @@ export default function DynamicIsland({
   const [isWalking, setIsWalking] = useState(false);
   const lastLocRef = useRef<{lat: number, lng: number} | null>(null);
   const walkTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+
+  const getDirectionIcon = (instruction: string | undefined) => {
+    if (!instruction) return <Navigation className="w-7 h-7" />;
+    const inst = instruction.toLowerCase();
+    if (inst.includes('uturn') || inst.includes('u-turn')) return <Undo2 className="w-7 h-7" />;
+    if (inst.includes('slight left')) return <ArrowUpLeft className="w-7 h-7" />;
+    if (inst.includes('left')) return <CornerUpLeft className="w-7 h-7" />;
+    if (inst.includes('slight right')) return <ArrowUpRight className="w-7 h-7" />;
+    if (inst.includes('right')) return <CornerUpRight className="w-7 h-7" />;
+    if (inst.includes('arrive')) return <MapPin className="w-7 h-7" />;
+    if (inst.includes('straight')) return <ArrowUp className="w-7 h-7" />;
+    return <Navigation className="w-7 h-7" />;
+  };
 
   // Walking Detection Logic
   useEffect(() => {
@@ -132,7 +181,7 @@ export default function DynamicIsland({
       case "radar-here":
         return { width: 200, height: 50, borderRadius: 24, opacity: 1 };
       case "navigation":
-        return { width: 340, height: 65, borderRadius: 32, opacity: 1 };
+        return { width: "calc(100vw - 24px)", height: "calc(var(--header-top) + 105px)", borderRadius: 42, opacity: 1, padding: "24px" };
       case "xp-drop":
         return { width: 160, height: 60, borderRadius: 30, opacity: 1 };
       default:
@@ -141,11 +190,12 @@ export default function DynamicIsland({
   };
 
   return (
-    <div className="fixed top-2 left-1/2 -translate-x-1/2 z-[9999] pointer-events-none flex justify-center">
+    <div className="fixed top-1 left-0 w-full z-[9999] pointer-events-none flex justify-center px-3 pt-1">
       <motion.div
         layout
         initial={false}
         animate={getIslandStyles()}
+        style={{ transformOrigin: "top center" }}
         transition={{ type: "spring", stiffness: 400, damping: 30 }}
         className="bg-black text-white overflow-hidden shadow-[0_10px_40px_rgba(0,0,0,0.8)] relative flex items-center justify-center pointer-events-auto"
       >
@@ -222,22 +272,58 @@ export default function DynamicIsland({
           {islandState === "navigation" && (
             <motion.div
               key="navigation"
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              className="flex items-center justify-between w-full px-6 h-full"
+              initial={{ opacity: 0, filter: "blur(10px)", scale: 0.95 }}
+              animate={{ opacity: 1, filter: "blur(0px)", scale: 1 }}
+              exit={{ opacity: 0, filter: "blur(10px)", scale: 0.95 }}
+              className="flex flex-col w-full h-full justify-between"
             >
-              <div className="flex items-center h-full">
-                <div className="bg-zinc-800/80 p-2 rounded-full mr-3">
-                  <Navigation className="w-6 h-6 text-white" />
+              {/* Top Row: Status & ETA */}
+              <div className="flex items-center justify-between w-full mb-3 px-1">
+                <div className="flex items-center space-x-1.5 bg-[#10b981]/15 px-2.5 py-1 rounded-full border border-[#10b981]/20">
+                  <span className="w-1.5 h-1.5 bg-[#10b981] rounded-full animate-pulse shadow-[0_0_8px_#10b981]"></span>
+                  <span className="text-[#10b981] font-bold text-[9px] uppercase tracking-widest">Live</span>
                 </div>
-                <div className="flex flex-col justify-center">
-                  <span className="text-white text-[13px] font-bold truncate max-w-[150px]">
-                    {navInstruction || "Proceed to route"}
-                  </span>
+                <div className="flex flex-col items-end justify-center">
+                  {totalRouteDistance !== undefined && (
+                    <span className="text-zinc-500 font-bold text-[10px] tracking-wide mb-[1px]">
+                      Total: {totalRouteDistance > 1000 ? (totalRouteDistance / 1000).toFixed(1) + ' km' : totalRouteDistance + 'm'}
+                    </span>
+                  )}
+                  {totalRemainingDist !== undefined && (
+                    <span className="text-zinc-300 font-bold text-xs tracking-wide">
+                      Left: {totalRemainingDist > 1000 ? (totalRemainingDist / 1000).toFixed(1) + ' km' : totalRemainingDist + 'm'}
+                    </span>
+                  )}
                 </div>
               </div>
-              <span className="text-[#10b981] text-lg font-black">{navDistance ? `${navDistance}m` : ''}</span>
+
+              {/* Main Instruction */}
+              <div className="flex items-center w-full space-x-4 mb-4">
+                <div className="w-14 h-14 rounded-full bg-[#10b981]/20 flex items-center justify-center border border-[#10b981]/30 text-[#10b981] shrink-0 shadow-[0_0_20px_rgba(16,185,129,0.15)]">
+                  {getDirectionIcon(navInstruction)}
+                </div>
+                <div className="flex flex-col flex-1 min-w-0 justify-center">
+                  <p className="text-white font-black text-[22px] leading-tight line-clamp-2 pr-2">
+                    {formattedPrimary}
+                  </p>
+                  {formattedDestination && (
+                    <p className="text-[#10b981] font-bold text-[15px] leading-snug line-clamp-2 mt-0.5 pr-2">
+                      {formattedDestination}
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              {/* Bottom Progress Indicator */}
+              <div className="w-full flex items-center space-x-3 mt-auto">
+                <div className="flex-1 h-1.5 bg-zinc-800/80 rounded-full overflow-hidden relative">
+                   <motion.div 
+                     className="absolute top-0 left-0 h-full bg-gradient-to-r from-[#10b981]/80 to-[#10b981] rounded-full shadow-[0_0_10px_rgba(16,185,129,0.5)]"
+                     animate={{ width: `${Math.max(3, navProgress || 0)}%` }}
+                     transition={{ duration: 1, ease: "easeOut" }}
+                   />
+                </div>
+              </div>
             </motion.div>
           )}
 
