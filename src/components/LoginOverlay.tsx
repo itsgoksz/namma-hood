@@ -205,7 +205,7 @@ export default function LoginOverlay() {
               <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
             </span>
             <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-emerald-400 uppercase">
-              Maken Bengaluru the Garden City Again
+              Make Bengaluru the Garden City Again
             </span>
           </motion.div>
 
