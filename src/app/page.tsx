@@ -248,7 +248,7 @@ export default function Home() {
 
   return (
     <>
-      <div className="fixed inset-0 overflow-hidden w-full flex flex-col px-4 pt-safe-header pb-[calc(env(safe-area-inset-bottom)+6rem)] space-y-3">
+      <div className="p-4 space-y-3 h-full flex flex-col pt-safe-header pb-[calc(env(safe-area-inset-bottom)+6rem)] max-w-md mx-auto relative z-10 overflow-hidden">
         <motion.div 
           initial={false}
           animate={{ 
@@ -257,7 +257,7 @@ export default function Home() {
             pointerEvents: isMapRouting ? 'none' : 'auto' 
           }}
           transition={{ duration: 0.3 }}
-          className="flex justify-between items-start z-10 shrink-0"
+          className="flex justify-between items-start z-10 shrink-0 mt-1"
         >
           <div className="max-w-[calc(100%-150px)] pb-1">
             <div className="mb-1">
@@ -271,7 +271,7 @@ export default function Home() {
         <div className="w-full flex-1 relative mt-2">
 
           {/* Map Wrapper (Fixed Size) */}
-          <div className="w-full h-full absolute inset-0 overflow-hidden rounded-2xl bg-black">
+          <div className="w-full h-full absolute inset-0 overflow-hidden rounded-2xl bg-black border border-white/10 shadow-[0_8px_32px_rgba(0,0,0,0.5)]">
             {/* Map Container */}
             <motion.div
               layout

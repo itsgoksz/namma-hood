@@ -181,7 +181,7 @@ export default function DynamicIsland({
       case "radar-here":
         return { width: 200, height: 50, borderRadius: 24, opacity: 1 };
       case "navigation":
-        return { width: "calc(100vw - 24px)", height: "calc(var(--header-top) + 105px)", borderRadius: 42, opacity: 1, padding: "24px" };
+        return { width: "min(calc(100vw - 24px), 420px)", height: "calc(var(--header-top) + 105px)", borderRadius: 42, opacity: 1, padding: "24px" };
       case "xp-drop":
         return { width: 160, height: 60, borderRadius: 30, opacity: 1 };
       default:
@@ -190,7 +190,7 @@ export default function DynamicIsland({
   };
 
   return (
-    <div className="fixed top-1 left-0 w-full z-[9999] pointer-events-none flex justify-center px-3 pt-1">
+    <div className="fixed top-1 left-0 right-0 max-w-md mx-auto z-[9999] pointer-events-none flex justify-center px-3 pt-1">
       <motion.div
         layout
         initial={false}
