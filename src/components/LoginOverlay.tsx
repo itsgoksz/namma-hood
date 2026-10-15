@@ -193,29 +193,31 @@ export default function LoginOverlay() {
           <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[550px] bg-gradient-to-b from-emerald-500/18 via-teal-500/10 to-transparent rounded-full blur-[140px] pointer-events-none" />
           <div className="absolute bottom-10 left-1/2 -translate-x-1/2 w-96 h-80 bg-emerald-600/10 rounded-full blur-[120px] pointer-events-none" />
 
-          {/* Micro Top Status Indicator */}
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.1, duration: 0.5 }}
-            className="mb-3.5 z-10 flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-[#080e0a]/90 border border-emerald-500/20 shadow-[0_0_20px_rgba(16,185,129,0.12)]"
-          >
-            <span className="relative flex h-2 w-2">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-            </span>
-            <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-emerald-400 uppercase">
-              Make Bengaluru the Garden City Again
-            </span>
-          </motion.div>
+          {/* Vertically and Horizontally Unified Centered Container */}
+          <div className="z-10 w-full max-w-[420px] flex flex-col items-center justify-center my-auto py-4">
+            {/* Micro Top Status Indicator */}
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.1, duration: 0.5 }}
+              className="mb-4 flex items-center gap-2 px-4 py-1.5 rounded-full bg-[#080e0a]/90 border border-emerald-500/25 shadow-[0_0_20px_rgba(16,185,129,0.15)]"
+            >
+              <span className="relative flex h-2 w-2">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+              </span>
+              <span className="text-[10px] font-mono font-bold tracking-[0.2em] text-emerald-400 uppercase">
+                Make Bengaluru the Garden City Again
+              </span>
+            </motion.div>
 
-          {/* Main Obsidian Vault Modal */}
-          <motion.div
-            initial={{ y: 20, opacity: 0, scale: 0.97 }}
-            animate={{ y: 0, opacity: 1, scale: 1 }}
-            transition={{ type: "spring", stiffness: 360, damping: 28 }}
-            className="z-10 w-full max-w-[390px] flex flex-col items-center text-center space-y-4 sm:space-y-4.5 bg-[#070b09]/92 backdrop-blur-3xl p-5 sm:p-7 rounded-[2.25rem] border border-white/[0.09] shadow-[0_30px_90px_rgba(0,0,0,0.95),0_0_60px_rgba(16,185,129,0.08)] my-auto relative overflow-hidden"
-          >
+            {/* Main Obsidian Vault Modal */}
+            <motion.div
+              initial={{ y: 20, opacity: 0, scale: 0.97 }}
+              animate={{ y: 0, opacity: 1, scale: 1 }}
+              transition={{ type: "spring", stiffness: 360, damping: 28 }}
+              className="w-full max-w-[390px] flex flex-col items-center text-center space-y-4 sm:space-y-4.5 bg-[#070b09]/95 backdrop-blur-3xl p-5 sm:p-7 rounded-[2.25rem] border border-white/[0.12] shadow-[0_30px_90px_rgba(0,0,0,0.95),0_0_60px_rgba(16,185,129,0.10)] relative overflow-hidden"
+            >
             {/* Specular Top Chamfer Glow Line */}
             <div className="absolute top-0 inset-x-6 h-[1.5px] bg-gradient-to-r from-transparent via-emerald-400/60 to-transparent pointer-events-none" />
 
@@ -526,14 +528,15 @@ export default function LoginOverlay() {
               </button>
 
               <div className="flex items-center gap-2 text-[10px] font-mono text-zinc-600">
-                <span>🛡️ CIVIC ENCRYPTION</span>
+                <span>CIVIC ENCRYPTION</span>
                 <span>•</span>
                 <span>NO TRACKERS</span>
                 <span>•</span>
                 <span>BENGALURU</span>
               </div>
             </div>
-          </motion.div>
+            </motion.div>
+          </div>
         </motion.div>
       )}
     </AnimatePresence>

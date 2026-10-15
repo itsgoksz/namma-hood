@@ -126,3 +126,11 @@ pwa-camera-modal-instance {
 
 
 @import "maplibre-gl/dist/maplibre-gl.css";
+
+/* Development tooling suppression */
+nextjs-portal,
+[data-nextjs-toast],
+[data-nextjs-dialog-overlay],
+#nextjs-dev-tools-wrapper {
+  display: none !important;
+}
