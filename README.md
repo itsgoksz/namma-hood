@@ -21,6 +21,31 @@ Municipal grievance portals are bureaucratic black holes: you file a ticket with
 
 ---
 
+## Live Field Interface
+
+### 1. Clustered Vector Blackspot Map
+Live MapLibre GL spatial layer rendering municipal incident clusters across Bengaluru, displaying active sector counts, live reports, and BBMP ward boundaries.
+
+<p align="center">
+  <img src="assets/map_preview.png" alt="Namma Hood Live Clustered Map" width="360" style="border-radius: 28px; box-shadow: 0 16px 40px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.12);" />
+</p>
+
+### 2. Community Civic Action Feed
+Real-time incident stream where citizens discover nearby blackspots, organize community cleanups, or resolve issues with verified photo evidence to earn and split Eco-XP.
+
+<p align="center">
+  <img src="assets/feed_preview.png" alt="Namma Hood Community Civic Action Feed" width="360" style="border-radius: 28px; box-shadow: 0 16px 40px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.12);" />
+</p>
+
+### 3. Ward Standings & Area Guardian Leaderboard
+Rolling 30-day municipal leaderboard tracking incident reports, verified cleanups, accumulated area XP, and reigning Area Guardian titles across Bengaluru wards.
+
+<p align="center">
+  <img src="assets/leaderboard_preview.png" alt="Namma Hood Area Standings Leaderboard" width="360" style="border-radius: 28px; box-shadow: 0 16px 40px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.12);" />
+</p>
+
+---
+
 ## Geospatial & Game Theory Mechanics
 
 ```mermaid
@@ -96,7 +121,10 @@ littr/
 │       ├── reports.json          # Seed civic incident records
 │       └── territories.json      # Ward index & boundary metadata
 ├── assets/                       # Branding & interface previews
-│   ├── preview.png               # Mobile app interface capture
+│   ├── preview.png               # Squad onboarding & registration hub
+│   ├── map_preview.png           # Clustered vector blackspot map
+│   ├── feed_preview.png          # Community civic action & cleanup feed
+│   ├── leaderboard_preview.png   # Ward standings & Area Guardian leaderboard
 │   └── logo.png                  # App branding
 ├── bbmp.geojson                  # Official Bengaluru ward vector polygons
 ├── supabase_migrations.sql       # Database schema, triggers & realtime publications
