@@ -1,35 +1,27 @@
-# 🏙️ Namma-Hood
+# Namma Hood
 
-> **Turning civic cleanup into a hyper-local territory war across Bengaluru.** Spot garbage blackspots, defend your ward, team up for SplitXP, and claim the crown of Area Guardian.
+> Turning civic cleanup into a hyper-local territory movement across Bengaluru. Spot garbage blackspots, defend your ward, team up for SplitXP, and claim the title of Area Guardian.
 
 <p align="center">
-  <img src="assets/hood_hero_preview.png" alt="Namma-Hood Product Showcase" width="100%" style="border-radius: 18px; box-shadow: 0 20px 50px rgba(0,0,0,0.5); border: 1px solid rgba(255,255,255,0.12);" />
+  <img src="assets/preview.png" alt="Namma Hood Mobile App Interface" width="380" style="border-radius: 28px; box-shadow: 0 16px 40px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.12);" />
 </p>
 
 ---
 
-## ⚡ The Big Idea
+## The Big Idea
 
-Municipal grievance portals are bureaucratic black holes: you file a ticket with a 14-digit reference number, wait three weeks, and watch the garbage pile continue to overflow. Venting on social media doesn't clean streets either.
+Municipal grievance portals are bureaucratic black holes: you file a ticket with a 14-digit reference number, wait three weeks, and watch the garbage pile continue to overflow. Venting on social media does not clean streets either.
 
-**Namma-Hood** reimagines civic maintenance as an adrenaline-fueled neighborhood territory war:
+**Namma Hood** reimagines civic maintenance as an action-driven neighborhood territory system:
 - **Geo-Tagged Blackspot Spotting:** Snap a photo of an illegal dumping zone or civic hazard. Native GPS grabs pin-point coordinates with zero manual entry.
-- **Real BBMP Ward Boundary Matching:** Turf.js runs mathematical point-in-polygon checks against official **Bruhat Bengaluru Mahanagara Palike (BBMP) ward vectors** (`bbmp.geojson`). Indiranagar #80, Koramangala #151, HSR Layout #174—every ward has its own real-time incident index and defense score.
-- **The Area Guardian Crown:** Neighborhoods track cleanup velocity. The citizen who leads verified cleanups in their ward holds the title of **Area Guardian** on the rolling 30-day leaderboard.
+- **Real BBMP Ward Boundary Matching:** Turf.js runs mathematical point-in-polygon checks against official **Bruhat Bengaluru Mahanagara Palike (BBMP) ward vectors** (`bbmp.geojson`). Indiranagar, Koramangala, HSR Layout—every ward has its own real-time incident index and defense score.
+- **The Area Guardian Title:** Neighborhoods track cleanup velocity. The citizen who leads verified cleanups in their ward holds the title of **Area Guardian** on the rolling 30-day leaderboard.
 - **The SplitXP Incentive System:** Eliminates the bystander effect. If Citizen A spots an issue and Citizen B cleans it up with photo verification, **they split the XP: 60% to the cleaner and 40% back to the original spotter**. Spotting and resolving work hand-in-hand.
-- **Daily Quests & Eco Shop:** Earn Eco-Credits through streaks and bounties (*Scout 2 spots*, *Verify a cleanup*) to unlock custom profile auras, titles, and partner perks.
+- **Direct Breakfast & Coffee Perks:** Earn Eco-Points through verified community drives that can be redeemed for breakfast discounts at local neighborhood eateries and partner cafes.
 
 ---
 
-## 📱 Live Field Interface
-
-<p align="center">
-  <img src="assets/preview.png" alt="Namma-Hood Mobile App Interface" width="380" style="border-radius: 28px; box-shadow: 0 16px 40px rgba(0,0,0,0.4); border: 1px solid rgba(255,255,255,0.12);" />
-</p>
-
----
-
-## 🕹️ Geospatial & Game Theory Mechanics
+## Geospatial & Game Theory Mechanics
 
 ```mermaid
 flowchart TD
@@ -51,17 +43,17 @@ flowchart TD
 ```
 
 ### 1. Point-in-Polygon Ward Assignment
-Instead of asking users to select their municipal ward from a confusing dropdown of 198+ wards, Namma-Hood uses `@turf/boolean-point-in-polygon` to automatically resolve GPS coordinates against official BBMP ward boundaries (`bbmp.geojson`) with sub-second spatial execution.
+Instead of asking users to select their municipal ward from a confusing dropdown of 198+ wards, Namma Hood uses `@turf/boolean-point-in-polygon` to automatically resolve GPS coordinates against official BBMP ward boundaries (`bbmp.geojson`) with sub-second spatial execution.
 
 ### 2. Clustered Vector Mapping
-In dense metropolitan areas with hundreds of reports, rendering individual DOM markers tanks framerates. Namma-Hood leverages **MapLibre GL** combined with **Supercluster** to dynamically group thousands of regional incidents into fluid, high-performance interactive clusters.
+In dense metropolitan areas with hundreds of reports, rendering individual DOM markers tanks framerates. Namma Hood leverages **MapLibre GL** combined with **Supercluster** to dynamically group thousands of regional incidents into fluid, high-performance interactive clusters.
 
 ### 3. Built for Real Indian City Conditions
 Field conditions in dense alleyways often have patchy cellular coverage. Reports filed with no signal are buffered into `@capacitor/preferences` on the device. An offline sync background worker listens for connectivity restoration and flushes queued uploads to Supabase automatically.
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 | Layer | Technology | Description |
 | :--- | :--- | :--- |
@@ -75,7 +67,7 @@ Field conditions in dense alleyways often have patchy cellular coverage. Reports
 
 ---
 
-## 📂 Project Structure
+## Project Structure
 
 ```text
 littr/
@@ -103,8 +95,7 @@ littr/
 │   └── data/
 │       ├── reports.json          # Seed civic incident records
 │       └── territories.json      # Ward index & boundary metadata
-├── assets/                       # Branding & high-res showcases
-│   ├── hood_hero_preview.png     # Namma Universe product showcase
+├── assets/                       # Branding & interface previews
 │   ├── preview.png               # Mobile app interface capture
 │   └── logo.png                  # App branding
 ├── bbmp.geojson                  # Official Bengaluru ward vector polygons
@@ -116,7 +107,7 @@ littr/
 
 ---
 
-## 🚀 Getting Started
+## Getting Started
 
 ### 1. Prerequisites
 - **Node.js** v20+ and **pnpm** (or npm)
@@ -146,11 +137,11 @@ Run the SQL queries in `supabase_migrations.sql` in your Supabase SQL Editor to 
 ```bash
 pnpm dev
 ```
-Open [http://localhost:3000](http://localhost:3000) in your browser.
+Open [http://localhost:3000](http://localhost:3000) in your browser, or visit the live deployment at [nammavoice.nammauniverse.in](https://nammavoice.nammauniverse.in).
 
 ---
 
-## 📱 Mobile Builds (iOS & Android)
+## Mobile Builds (iOS & Android)
 
 ```bash
 # 1. Build the production static web bundle
