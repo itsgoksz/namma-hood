@@ -429,7 +429,7 @@ export default function FeedPage() {
           {feed.map((post, i) => (
             <GarbageCard
               key={post.id}
-              className="h-[calc(100svh-env(safe-area-inset-top)-env(safe-area-inset-bottom)-15.5rem)] shrink-0"
+              className="w-full shrink-0"
               layoutId={`post-${post.id}`}
               post={post}
               variant="feed"

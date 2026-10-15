@@ -230,8 +230,8 @@ export default function GarbageCard({
       {/* Photo */}
       <div 
         className={cn(
-          "w-full relative bg-[#000000] flex-1",
-          isMap ? "p-3 pb-0 cursor-pointer" : "min-h-[250px] border-y border-[#10b981]/20 cursor-pointer active:scale-[0.98] transition-transform"
+          "w-full relative bg-[#000000]",
+          isMap ? "p-3 pb-0 cursor-pointer" : "border-y border-[#10b981]/20 cursor-pointer active:scale-[0.99] transition-transform"
         )}
         onClick={() => { if (onImageClick) onImageClick(); }}
       >
@@ -247,11 +247,11 @@ export default function GarbageCard({
             </div>
           </div>
         ) : (
-          <div className={cn("w-full relative", isMap ? "aspect-[4/3]" : "h-full")}>
+          <div className={cn("w-full relative overflow-hidden", isMap ? "aspect-[4/3]" : "aspect-[4/3] max-h-[380px] min-h-[220px]")}>
             {post.image_base64 ? (
               <img src={getImageUrl(post.image_base64)} alt="Report" className={cn("w-full h-full object-cover", isMap ? "rounded-lg" : "")} crossOrigin="anonymous" />
             ) : (
-              <div className="w-full h-full flex items-center justify-center text-white/20">
+              <div className="w-full h-48 flex items-center justify-center text-white/20">
                 No Photo
               </div>
             )}
@@ -259,7 +259,7 @@ export default function GarbageCard({
         )}
         
         {!isMap && (
-          <div className="absolute bottom-3 left-3 bg-[#000000]/60 backdrop-blur-md px-3 py-1.5 rounded-full flex items-center space-x-1 border border-[#10b981]/20">
+          <div className="absolute bottom-3 left-3 bg-[#000000]/70 backdrop-blur-md px-3 py-1.5 rounded-full flex items-center space-x-1 border border-[#10b981]/20 shadow-md">
             <MapPin className="text-zinc-400 w-3 h-3" />
             <LocationTag lat={post.lat} lng={post.lng} />
           </div>
@@ -366,18 +366,18 @@ export default function GarbageCard({
         </div>
           
         {!post.cleanup_image_base64 && (
-            <div className="pt-2 flex flex-row space-x-2 w-full">
+            <div className="pt-2 flex flex-row space-x-2 w-full shrink-0">
               <button 
                 onClick={handleCleanup}
                 disabled={isCleaningUp}
-                className="flex-[3] bg-[#10b981]/25 active:bg-[#10b981]/40 text-[#10b981] border border-[#10b981]/40 font-black py-3 px-2 rounded-xl transition-all active:scale-95 shadow-[0_0_20px_rgba(16,185,129,0.2)] flex items-center justify-center space-x-1.5 disabled:opacity-50"
+                className="flex-[3] min-h-[46px] bg-[#10b981]/25 active:bg-[#10b981]/40 text-[#10b981] border border-[#10b981]/40 font-black py-2.5 px-3 rounded-xl transition-all active:scale-95 shadow-[0_0_20px_rgba(16,185,129,0.2)] flex items-center justify-center space-x-1.5 disabled:opacity-50"
               >
                 {isCleaningUp ? (
                   <div className="w-5 h-5 border-2 border-[#10b981]/30 border-t-[#10b981] rounded-full animate-spin" />
                 ) : (
                   <>
-                    <CameraIcon className="w-5 h-5 text-[#10b981] shrink-0" />
-                    <span className="text-sm leading-tight">Clean! (+{getSeverityXP(post.severity || 'light')} XP)</span>
+                    <CameraIcon className="w-4 h-4 text-[#10b981] shrink-0" />
+                    <span className="text-sm font-black leading-tight whitespace-nowrap">Clean! (+{getSeverityXP(post.severity || 'light')} XP)</span>
                   </>
                 )}
               </button>
@@ -387,10 +387,10 @@ export default function GarbageCard({
                   e.stopPropagation();
                   onNavigate?.(post.lat, post.lng);
                 }}
-                className="flex-[2] bg-[#f14f4f] hover:bg-[#f14f4f]/90 text-white font-black py-3 px-2 rounded-xl flex items-center justify-center space-x-1.5 shadow-md transition-colors"
+                className="flex-[2] min-h-[46px] bg-[#f14f4f] hover:bg-[#f14f4f]/90 text-white font-black py-2.5 px-3 rounded-xl flex items-center justify-center space-x-1.5 shadow-[0_0_15px_rgba(241,79,79,0.3)] transition-all active:scale-95 shrink-0"
               >
-                <Navigation className="w-5 h-5 shrink-0" />
-                <span className="text-sm leading-tight">Navigate</span>
+                <Navigation className="w-4 h-4 shrink-0" />
+                <span className="text-sm font-black leading-tight whitespace-nowrap">Navigate</span>
               </button>
             </div>
           )}

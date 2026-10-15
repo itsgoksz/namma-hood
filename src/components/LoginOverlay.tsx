@@ -2,16 +2,17 @@
 
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, Leaf, Lock, User, AlertCircle } from "lucide-react";
+import { ArrowRight, Leaf, Lock, User, AlertCircle, Eye, EyeOff, Sparkles, Shield, Trophy } from "lucide-react";
 import { supabase } from "@/lib/supabase";
 import { getFastLocation } from "@/lib/location";
-import { hasProfanity, validatePassword } from "@/lib/utils";
+import { hasProfanity, validatePassword, cn } from "@/lib/utils";
 
 export default function LoginOverlay() {
   const [isOpen, setIsOpen] = useState(true);
   const [isLoginMode, setIsLoginMode] = useState(false); // Default to signup
   const [name, setName] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -31,6 +32,13 @@ export default function LoginOverlay() {
     };
     checkSession();
   }, []);
+
+  const handleGuestEnter = () => {
+    if (!localStorage.getItem("namma_user")) {
+      localStorage.setItem("namma_user", "guest_guardian");
+    }
+    setIsOpen(false);
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -159,118 +167,169 @@ export default function LoginOverlay() {
       {isOpen && (
         <motion.div
           initial={{ opacity: 1 }}
-          exit={{ opacity: 0, scale: 1.05 }}
-          transition={{ duration: 0.5, ease: "easeInOut" }}
-          className="fixed inset-0 z-[10000] bg-[#000000] flex flex-col items-center justify-center p-6 overflow-y-auto"
+          exit={{ opacity: 0, scale: 0.98 }}
+          transition={{ duration: 0.35, ease: "easeInOut" }}
+          className="fixed inset-0 z-[10000] bg-[#000000]/95 backdrop-blur-xl flex flex-col items-center justify-center p-4 sm:p-6 overflow-y-auto"
         >
-          {/* Background Stars */}
-          <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-            {[...Array(50)].map((_, i) => (
-              <div
-                key={i}
-                className="absolute bg-white rounded-full opacity-20"
-                style={{
-                  width: Math.random() * 3 + 'px',
-                  height: Math.random() * 3 + 'px',
-                  top: Math.random() * 100 + '%',
-                  left: Math.random() * 100 + '%',
-                  animation: `twinkle ${Math.random() * 5 + 3}s infinite alternate`
-                }}
-              />
-            ))}
-          </div>
+          {/* Subtle Ambient Radial Glow */}
+          <div className="absolute top-1/4 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-[#10b981]/15 rounded-full blur-[100px] pointer-events-none" />
 
           <motion.div 
-            initial={{ y: 20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="z-10 w-full max-w-sm flex flex-col items-center text-center space-y-6 bg-black/60 backdrop-blur-md p-8 rounded-3xl border border-[#10b981]/20 my-auto"
+            initial={{ y: 25, opacity: 0, scale: 0.96 }}
+            animate={{ y: 0, opacity: 1, scale: 1 }}
+            transition={{ type: "spring", stiffness: 380, damping: 28 }}
+            className="z-10 w-full max-w-sm flex flex-col items-center text-center space-y-5 bg-[#0a0f0d]/90 backdrop-blur-2xl p-6 sm:p-8 rounded-[2rem] border border-[#10b981]/25 shadow-[0_20px_60px_-15px_rgba(0,0,0,0.9),0_0_40px_rgba(16,185,129,0.12)] my-auto relative overflow-hidden"
           >
-            <div className="bg-[#10b981]/5 p-4 rounded-full border border-[#10b981]/20 shadow-none">
-              <Leaf className="w-10 h-10 text-[#10b981]" />
+            {/* Top Branding */}
+            <div className="relative flex items-center justify-center">
+              <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[#10b981]/25 to-[#10b981]/5 border border-[#10b981]/40 flex items-center justify-center shadow-[0_0_30px_rgba(16,185,129,0.3)]">
+                <Leaf className="w-8 h-8 text-[#10b981]" strokeWidth={2.5} />
+              </div>
             </div>
             
             <div className="space-y-1">
-              <h1 className="text-3xl font-black text-white tracking-tight">{isLoginMode ? "Welcome Back" : "Join Namma Hood"}</h1>
-              <p className="text-[#10b981] font-bold tracking-widest text-xs uppercase mt-1">
-                {isLoginMode ? "Log in to continue" : "Create your account"}
+              <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Namma Hood</h1>
+              <p className="text-zinc-400 font-medium text-xs">
+                Bangalore&apos;s Civic Action &amp; Cleanup Network
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="w-full space-y-4 mt-4">
+            {/* Feature Pills */}
+            <div className="flex items-center justify-center gap-2 flex-wrap text-[11px] font-bold text-zinc-300">
+              <span className="bg-white/5 border border-white/10 px-2.5 py-1 rounded-full flex items-center gap-1">
+                <Sparkles className="w-3 h-3 text-[#10b981]" /> Live Missions
+              </span>
+              <span className="bg-white/5 border border-white/10 px-2.5 py-1 rounded-full flex items-center gap-1">
+                <Trophy className="w-3 h-3 text-[#d4af37]" /> Eco XP
+              </span>
+              <span className="bg-white/5 border border-white/10 px-2.5 py-1 rounded-full flex items-center gap-1">
+                <Shield className="w-3 h-3 text-[#38bdf8]" /> Ward Ranks
+              </span>
+            </div>
+
+            {/* Segmented Tab Switcher */}
+            <div className="flex bg-black/60 p-1 rounded-xl border border-white/10 w-full">
+              <button
+                type="button"
+                onClick={() => { setIsLoginMode(false); setErrorMsg(""); }}
+                className={cn(
+                  "flex-1 py-2 text-xs font-black rounded-lg transition-all relative",
+                  !isLoginMode ? "text-black" : "text-zinc-400 hover:text-white"
+                )}
+              >
+                {!isLoginMode && (
+                  <motion.div
+                    layoutId="auth-tab"
+                    className="absolute inset-0 bg-[#10b981] rounded-lg shadow-[0_0_15px_rgba(16,185,129,0.4)]"
+                    transition={{ type: "spring", stiffness: 450, damping: 30 }}
+                  />
+                )}
+                <span className="relative z-10">Create Account</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => { setIsLoginMode(true); setErrorMsg(""); }}
+                className={cn(
+                  "flex-1 py-2 text-xs font-black rounded-lg transition-all relative",
+                  isLoginMode ? "text-black" : "text-zinc-400 hover:text-white"
+                )}
+              >
+                {isLoginMode && (
+                  <motion.div
+                    layoutId="auth-tab"
+                    className="absolute inset-0 bg-[#10b981] rounded-lg shadow-[0_0_15px_rgba(16,185,129,0.4)]"
+                    transition={{ type: "spring", stiffness: 450, damping: 30 }}
+                  />
+                )}
+                <span className="relative z-10">Sign In</span>
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="w-full space-y-3.5 mt-1">
               <div className="space-y-3">
                 <div className="relative flex items-center">
-                  <User className="absolute left-4 w-5 h-5 text-zinc-400" />
+                  <User className="absolute left-4 w-4 h-4 text-zinc-400 pointer-events-none" />
                   <input
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="Username"
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-white placeholder:text-zinc-500 focus:outline-none focus:border-[#10b981]/40 focus:bg-white/10 transition-all font-bold text-lg"
+                    placeholder="Username (e.g. gokul_hood)"
+                    autoCapitalize="none"
+                    autoCorrect="off"
+                    spellCheck="false"
+                    className="w-full bg-white/[0.04] border border-white/10 rounded-xl pl-11 pr-4 py-3.5 text-white placeholder:text-zinc-500 focus:outline-none focus:border-[#10b981] focus:ring-2 focus:ring-[#10b981]/20 transition-all font-semibold text-sm"
                     required
                   />
                 </div>
                 
                 <div className="relative flex items-center">
-                  <Lock className="absolute left-4 w-5 h-5 text-zinc-400" />
+                  <Lock className="absolute left-4 w-4 h-4 text-zinc-400 pointer-events-none" />
                   <input
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="Password"
-                    className="w-full bg-white/5 border border-white/10 rounded-2xl pl-12 pr-4 py-4 text-white placeholder:text-zinc-500 focus:outline-none focus:border-[#10b981]/40 focus:bg-white/10 transition-all font-bold text-lg"
+                    placeholder={isLoginMode ? "Enter password" : "Create password (8+ chars)"}
+                    className="w-full bg-white/[0.04] border border-white/10 rounded-xl pl-11 pr-11 py-3.5 text-white placeholder:text-zinc-500 focus:outline-none focus:border-[#10b981] focus:ring-2 focus:ring-[#10b981]/20 transition-all font-semibold text-sm"
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3.5 text-zinc-500 hover:text-white transition-colors p-1"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
                 </div>
               </div>
 
               <AnimatePresence>
                 {errorMsg && (
                   <motion.div 
-                    initial={{ opacity: 0, height: 0 }}
-                    animate={{ opacity: 1, height: 'auto' }}
-                    exit={{ opacity: 0, height: 0 }}
-                    className="bg-red-500/10 border border-red-500/30 text-red-400 text-sm font-semibold p-3 rounded-xl flex items-start space-x-2 text-left"
+                    initial={{ opacity: 0, y: -6 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -6 }}
+                    className="bg-red-500/15 border border-red-500/30 text-red-300 text-xs font-semibold p-3 rounded-xl flex items-start space-x-2 text-left"
                   >
-                    <AlertCircle className="w-5 h-5 shrink-0 mt-0.5" />
-                    <span>{errorMsg}</span>
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5 text-red-400" />
+                    <span className="leading-tight">{errorMsg}</span>
                   </motion.div>
                 )}
               </AnimatePresence>
               
               {!isLoginMode && (
-                <p className="text-zinc-400 text-xs font-semibold px-2 text-left">
-                  Note: This username will be used publicly on your profile and leaderboards.
+                <p className="text-zinc-500 text-[11px] font-medium px-1 text-left leading-tight">
+                  Your username is public and used for ward missions, leaderboards, and cleanup squads.
                 </p>
               )}
 
               <motion.button
-                whileTap={{ scale: 0.95 }}
+                whileHover={{ scale: 1.01 }}
+                whileTap={{ scale: 0.97 }}
                 type="submit"
                 disabled={isLoading}
-                className="w-full bg-[#10b981] hover:bg-[#10b981]/80 text-black font-black py-4 rounded-2xl flex items-center justify-center space-x-2 text-lg disabled:opacity-50 transition-colors duration-300 shadow-[0_0_20px_rgba(16,185,129,0.3)] mt-2"
+                className="w-full bg-gradient-to-r from-[#10b981] to-[#059669] hover:brightness-110 text-black font-black py-3.5 rounded-xl flex items-center justify-center space-x-2 text-sm disabled:opacity-50 transition-all shadow-[0_0_25px_rgba(16,185,129,0.35)] mt-2 cursor-pointer"
               >
                 {isLoading ? (
-                  <div className="w-6 h-6 border-4 border-black/20 border-t-black rounded-full animate-spin" />
+                  <div className="w-5 h-5 border-2 border-black/30 border-t-black rounded-full animate-spin" />
                 ) : (
                   <>
-                    <span>{isLoginMode ? "Log In" : "Sign Up"}</span>
-                    <ArrowRight className="w-5 h-5" strokeWidth={3} />
+                    <span>{isLoginMode ? "Sign In to Namma Hood" : "Create Account & Join"}</span>
+                    <ArrowRight className="w-4 h-4" strokeWidth={2.5} />
                   </>
                 )}
               </motion.button>
             </form>
 
-            <div className="pt-2 w-full border-t border-white/10">
+            {/* Quick Guest Preview Action */}
+            <div className="pt-2 w-full border-t border-white/10 flex flex-col items-center gap-1.5">
               <button 
                 type="button"
-                onClick={() => {
-                  setIsLoginMode(!isLoginMode);
-                  setErrorMsg("");
-                }}
-                className="text-sm text-zinc-400 hover:text-white transition-colors font-bold"
+                onClick={handleGuestEnter}
+                className="text-xs text-zinc-400 hover:text-[#10b981] transition-colors font-bold flex items-center gap-1"
               >
-                {isLoginMode ? "Don't have an account? Sign up" : "Already have an account? Log in"}
+                <span>Just exploring?</span>
+                <span className="underline underline-offset-2">Browse as Guest →</span>
               </button>
             </div>
           </motion.div>

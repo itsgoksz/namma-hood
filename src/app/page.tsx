@@ -2,13 +2,15 @@
 
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MapPin, Navigation, Flame, Target, CheckCircle2, X, Info, ChevronDown } from "lucide-react";
+import { MapPin, Navigation, Flame, Target, CheckCircle2, X, Info, ChevronDown, Compass, Sparkles } from "lucide-react";
+import Link from "next/link";
 import { getCurrentUser } from "@/lib/api";
 import { supabase } from "@/lib/supabase";
 import { getUserStreak } from "@/lib/streak";
 import { getFastLocation } from "@/lib/location";
 import { Geolocation } from "@capacitor/geolocation";
 import { getDailyMissions, Mission } from "@/lib/missions";
+import { cn } from "@/lib/utils";
 import dynamic from "next/dynamic";
 
 const GarbageMap = dynamic(() => import("@/components/GarbageMap"), {
@@ -22,6 +24,33 @@ const GarbageMap = dynamic(() => import("@/components/GarbageMap"), {
     </div>
   ),
 });
+
+export const DEMO_HUBS = [
+  {
+    id: "jp_nagar",
+    name: "JP Nagar",
+    tag: "Recommended",
+    badge: "12 Live Reports",
+    description: "South Bengaluru • 7th Phase",
+    coords: { lat: 12.9063, lng: 77.5857 },
+  },
+  {
+    id: "jayanagar",
+    name: "Jayanagar",
+    tag: "Active Hub",
+    badge: "8 Live Reports",
+    description: "South Bengaluru • 4th Block",
+    coords: { lat: 12.9308, lng: 77.5838 },
+  },
+  {
+    id: "btm",
+    name: "BTM Layout",
+    tag: "Active Hub",
+    badge: "5 Live Reports",
+    description: "South Bengaluru • 2nd Stage",
+    coords: { lat: 12.9165, lng: 77.6101 },
+  }
+];
 
 // Haversine formula to calculate distance between two coordinates in meters
 function getDistance(lat1: number, lon1: number, lat2: number, lon2: number) {
@@ -48,9 +77,27 @@ export default function Home() {
     }
   }, []);
 
-  // Try to instantly grab location from cache on mount
+  const [isDemoMode, setIsDemoMode] = useState<boolean>(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('namma_demo_mode') === 'true';
+    }
+    return false;
+  });
+  const [selectedHubId, setSelectedHubId] = useState<string>(() => {
+    if (typeof window !== 'undefined') {
+      return sessionStorage.getItem('namma_demo_hub') || 'jp_nagar';
+    }
+    return 'jp_nagar';
+  });
+
+  // Try to instantly grab location from cache on mount (or demo hub if demo mode active)
   const [userLoc, setUserLoc] = useState<{ lat: number, lng: number, heading?: number | null } | null>(() => {
     if (typeof window !== 'undefined') {
+      if (sessionStorage.getItem('namma_demo_mode') === 'true') {
+        const hubId = sessionStorage.getItem('namma_demo_hub') || 'jp_nagar';
+        const hub = DEMO_HUBS.find(h => h.id === hubId) || DEMO_HUBS[0];
+        return { lat: hub.coords.lat, lng: hub.coords.lng, heading: 0 };
+      }
       const lat = localStorage.getItem('namma_lat');
       const lng = localStorage.getItem('namma_lng');
       if (lat && lng) return { lat: parseFloat(lat), lng: parseFloat(lng) };
@@ -78,12 +125,36 @@ export default function Home() {
   }, [isMapRouting]);
 
   const checkBounds = (lat: number, lng: number) => {
+    if (typeof window !== 'undefined' && sessionStorage.getItem('namma_demo_mode') === 'true') {
+      setIsOutOfBounds(false);
+      return;
+    }
     // strict allowedBounds: [12.865, 77.550] to [12.945, 77.625]
     if (lat < 12.865 || lat > 12.945 || lng < 77.550 || lng > 77.625) {
       setIsOutOfBounds(true);
     } else {
       setIsOutOfBounds(false);
     }
+  };
+
+  const enterDemoMode = (hubId?: string) => {
+    const targetId = hubId || selectedHubId;
+    const hub = DEMO_HUBS.find(h => h.id === targetId) || DEMO_HUBS[0];
+    sessionStorage.setItem('namma_demo_mode', 'true');
+    sessionStorage.setItem('namma_demo_hub', hub.id);
+    setIsDemoMode(true);
+    setSelectedHubId(hub.id);
+    setUserLoc({ lat: hub.coords.lat, lng: hub.coords.lng, heading: 0 });
+    setIsOutOfBounds(false);
+  };
+
+  const exitDemoMode = async () => {
+    sessionStorage.removeItem('namma_demo_mode');
+    sessionStorage.removeItem('namma_demo_hub');
+    setIsDemoMode(false);
+    const loc = await getFastLocation();
+    setUserLoc(loc);
+    checkBounds(loc.lat, loc.lng);
   };
 
   useEffect(() => {
@@ -135,6 +206,7 @@ export default function Home() {
           maximumAge: 0
         }, (pos, err) => {
           if (pos) {
+            if (sessionStorage.getItem('namma_demo_mode') === 'true') return;
             setUserLoc({
               lat: pos.coords.latitude,
               lng: pos.coords.longitude,
@@ -167,10 +239,19 @@ export default function Home() {
         if (reportsError || !reportsData) return;
         const data = reportsData.map(r => ({ ...r, pos: [r.lat, r.lng] }));
 
-        // Guarantee location within 1.5s max (cache -> GPS -> JP Nagar fallback)
-        const loc = await getFastLocation();
-        setUserLoc(loc);
-        checkBounds(loc.lat, loc.lng);
+        let loc: { lat: number, lng: number, heading?: number | null };
+        if (sessionStorage.getItem('namma_demo_mode') === 'true') {
+          const hubId = sessionStorage.getItem('namma_demo_hub') || 'jp_nagar';
+          const hub = DEMO_HUBS.find(h => h.id === hubId) || DEMO_HUBS[0];
+          loc = { lat: hub.coords.lat, lng: hub.coords.lng, heading: 0 };
+          setUserLoc(loc);
+          setIsOutOfBounds(false);
+        } else {
+          // Guarantee location within 1.5s max (cache -> GPS -> JP Nagar fallback)
+          loc = await getFastLocation();
+          setUserLoc(loc);
+          checkBounds(loc.lat, loc.lng);
+        }
 
         let closest: any = null;
         let minDistance = Infinity;
@@ -230,18 +311,105 @@ export default function Home() {
   };
 
   if (isOutOfBounds) {
+    const selectedHub = DEMO_HUBS.find(h => h.id === selectedHubId) || DEMO_HUBS[0];
     return (
-      <div className="h-full w-full flex flex-col items-center justify-center p-6 text-center bg-black/95 relative z-50 pt-safe-header pb-[calc(env(safe-area-inset-bottom)+8rem)]">
-        <div className="w-24 h-24 bg-red-500/10 rounded-full flex items-center justify-center mb-6 border border-red-500/30">
-          <MapPin className="w-12 h-12 text-red-500" />
+      <div className="h-full w-full flex flex-col justify-between p-4 sm:p-6 text-center max-w-md mx-auto relative z-50 pt-safe-header pb-[calc(env(safe-area-inset-bottom)+5rem)] overflow-y-auto">
+        <div className="my-auto space-y-6">
+          {/* Header Icon with Glowing Radar Pulse */}
+          <div className="relative mx-auto w-20 h-20 flex items-center justify-center">
+            <div className="absolute inset-0 rounded-full bg-amber-500/20 animate-ping opacity-60" />
+            <div className="w-20 h-20 bg-gradient-to-br from-amber-500/20 to-amber-500/5 rounded-full flex items-center justify-center border border-amber-500/30 shadow-[0_0_30px_rgba(245,158,11,0.2)]">
+              <Compass className="w-9 h-9 text-amber-400" />
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <h1 className="text-2xl sm:text-3xl font-black text-white tracking-tight">Outside Live Service Area</h1>
+            <p className="text-zinc-400 text-xs sm:text-sm font-medium leading-relaxed max-w-xs mx-auto">
+              Namma Hood&apos;s real-time civic cleanups are currently live in <span className="text-white font-bold">South Bengaluru</span>. Physical GPS presence is required to verify reports.
+            </p>
+          </div>
+
+          {/* Interactive Demo Mode Card */}
+          <div className="glass-panel p-5 rounded-3xl border border-[#10b981]/30 bg-[#10b981]/5 text-left space-y-4 shadow-[0_10px_40px_rgba(0,0,0,0.6)]">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2">
+                <Sparkles className="w-4 h-4 text-[#10b981]" />
+                <h3 className="text-sm font-bold text-white tracking-wide">Test Drive in Demo Mode</h3>
+              </div>
+              <span className="text-[10px] font-black uppercase tracking-wider bg-[#10b981]/15 text-[#10b981] px-2 py-0.5 rounded-full border border-[#10b981]/25">
+                Preview
+              </span>
+            </div>
+            <p className="text-xs text-zinc-400 leading-normal">
+              Want to get a feel of the app? Select an active hub to explore live reports, missions, and the interactive map:
+            </p>
+
+            {/* Hub Selector Cards */}
+            <div className="space-y-2">
+              {DEMO_HUBS.map((hub) => {
+                const isSelected = selectedHubId === hub.id;
+                return (
+                  <button
+                    key={hub.id}
+                    type="button"
+                    onClick={() => setSelectedHubId(hub.id)}
+                    className={cn(
+                      "w-full p-3 rounded-2xl border text-left transition-all flex items-center justify-between cursor-pointer",
+                      isSelected
+                        ? "bg-[#10b981]/15 border-[#10b981] shadow-[0_0_20px_rgba(16,185,129,0.2)]"
+                        : "bg-white/[0.03] border-white/10 hover:border-white/20 hover:bg-white/[0.06]"
+                    )}
+                  >
+                    <div className="flex items-center space-x-3">
+                      <div className={cn(
+                        "w-4 h-4 rounded-full border flex items-center justify-center shrink-0 transition-colors",
+                        isSelected ? "border-[#10b981] bg-[#10b981]" : "border-zinc-500 bg-white/5"
+                      )}>
+                        {isSelected && <div className="w-1.5 h-1.5 rounded-full bg-black" />}
+                      </div>
+                      <div>
+                        <div className="flex items-center space-x-2">
+                          <span className={cn("text-sm font-bold", isSelected ? "text-white" : "text-zinc-300")}>{hub.name}</span>
+                          <span className={cn("text-[9px] font-black uppercase px-1.5 py-0.5 rounded", isSelected ? "bg-[#10b981]/20 text-[#10b981]" : "bg-white/5 text-zinc-400")}>
+                            {hub.tag}
+                          </span>
+                        </div>
+                        <p className="text-[11px] text-zinc-500 font-medium">{hub.description}</p>
+                      </div>
+                    </div>
+                    <span className="text-[11px] text-zinc-400 font-semibold">{hub.badge}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Primary Action Button */}
+            <motion.button
+              whileHover={{ scale: 1.01 }}
+              whileTap={{ scale: 0.97 }}
+              onClick={() => enterDemoMode()}
+              className="w-full bg-[#10b981] hover:bg-[#10b981]/90 text-black font-black py-3.5 px-4 rounded-xl flex items-center justify-center space-x-2 shadow-[0_0_25px_rgba(16,185,129,0.4)] transition-all text-sm cursor-pointer"
+            >
+              <Navigation className="w-4 h-4 fill-current" />
+              <span>Explore {selectedHub.name} (Demo Mode)</span>
+            </motion.button>
+          </div>
+
+          {/* Secondary Actions */}
+          <div className="space-y-3 pt-2">
+            <Link
+              href="/feed"
+              className="inline-flex items-center space-x-1.5 text-xs text-zinc-400 hover:text-white font-bold transition-colors"
+            >
+              <span>Browse Community Feed</span>
+              <span>→</span>
+            </Link>
+            <p className="text-zinc-600 text-[11px] font-semibold">
+              Expanding across Bangalore soon!
+            </p>
+          </div>
         </div>
-        <h1 className="text-3xl font-black text-white mb-3">Outside Service Area</h1>
-        <p className="text-zinc-400 font-medium mb-8 max-w-xs">
-          Namma Voice is currently only active in South Bengaluru (Jayanagar, JP Nagar, BTM Layout).
-          You must be physically located in these areas to access the map and reports.
-        </p>
-        <div className="w-full h-px bg-white/10 my-4" />
-        <p className="text-[#10b981] font-bold text-sm">We are expanding soon!</p>
       </div>
     );
   }
@@ -289,6 +457,26 @@ export default function Home() {
                 onNavDistanceChange={setNavDistance}
                 onClearRoute={() => setMissionRouteDest(null)}
               />
+
+              {/* Demo Mode Top Indicator */}
+              {isDemoMode && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="absolute top-3 left-1/2 -translate-x-1/2 z-[990] flex items-center space-x-2 bg-black/85 backdrop-blur-md border border-[#10b981]/40 px-3.5 py-1.5 rounded-full shadow-[0_0_20px_rgba(0,0,0,0.8)] pointer-events-auto"
+                >
+                  <div className="w-2 h-2 rounded-full bg-[#10b981] animate-pulse shadow-[0_0_8px_#10b981]" />
+                  <span className="text-white text-xs font-bold tracking-tight">
+                    Demo Mode: <span className="text-[#10b981]">{DEMO_HUBS.find(h => h.id === selectedHubId)?.name || "JP Nagar"}</span>
+                  </span>
+                  <button
+                    onClick={exitDemoMode}
+                    className="text-zinc-400 hover:text-white text-[11px] font-bold bg-white/10 hover:bg-white/20 px-2 py-0.5 rounded-full transition-colors ml-1 cursor-pointer"
+                  >
+                    Exit
+                  </button>
+                </motion.div>
+              )}
 
               {/* Combined Missions & Nearest Cleanup Overlay */}
               <AnimatePresence>
